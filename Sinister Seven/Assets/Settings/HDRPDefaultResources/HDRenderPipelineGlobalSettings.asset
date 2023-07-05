@@ -101,11 +101,55 @@ MonoBehaviour:
     serializedHasVolumes:
     - sceneGUID: 8124e5870f4fd4c779e7a5f994e84ad1
       hasProbeVolumes: 0
+    - sceneGUID: 18225ff81e4d3d04dae10a5aa9065a13
+      hasProbeVolumes: 0
+    - sceneGUID: 5498c33960cb3c3419aa224279802a5c
+      hasProbeVolumes: 0
     serializedProfiles:
     - sceneGUID: 8124e5870f4fd4c779e7a5f994e84ad1
       profile: {fileID: 11400000, guid: 9e598e87f91ec4e4e80f802797fbdbe2, type: 2}
+    - sceneGUID: 18225ff81e4d3d04dae10a5aa9065a13
+      profile: {fileID: 11400000, guid: 9e598e87f91ec4e4e80f802797fbdbe2, type: 2}
+    - sceneGUID: 5498c33960cb3c3419aa224279802a5c
+      profile: {fileID: 11400000, guid: 9e598e87f91ec4e4e80f802797fbdbe2, type: 2}
     serializedBakeSettings:
     - sceneGUID: 8124e5870f4fd4c779e7a5f994e84ad1
+      settings:
+        m_Version: 1
+        dilationSettings:
+          enableDilation: 1
+          dilationDistance: 1
+          dilationValidityThreshold: 0.25
+          dilationIterations: 1
+          squaredDistWeighting: 1
+        virtualOffsetSettings:
+          useVirtualOffset: 1
+          outOfGeoOffset: 0.01
+          searchMultiplier: 0.2
+          rayOriginBias: -0.001
+          maxHitsPerRay: 10
+          collisionMask:
+            serializedVersion: 2
+            m_Bits: 4294967291
+    - sceneGUID: 18225ff81e4d3d04dae10a5aa9065a13
+      settings:
+        m_Version: 1
+        dilationSettings:
+          enableDilation: 1
+          dilationDistance: 1
+          dilationValidityThreshold: 0.25
+          dilationIterations: 1
+          squaredDistWeighting: 1
+        virtualOffsetSettings:
+          useVirtualOffset: 1
+          outOfGeoOffset: 0.01
+          searchMultiplier: 0.2
+          rayOriginBias: -0.001
+          maxHitsPerRay: 10
+          collisionMask:
+            serializedVersion: 2
+            m_Bits: 4294967291
+    - sceneGUID: 5498c33960cb3c3419aa224279802a5c
       settings:
         m_Version: 1
         dilationSettings:
@@ -127,6 +171,8 @@ MonoBehaviour:
     - name: Default
       sceneGUIDs:
       - 8124e5870f4fd4c779e7a5f994e84ad1
+      - 18225ff81e4d3d04dae10a5aa9065a13
+      - 5498c33960cb3c3419aa224279802a5c
       settings:
         m_Version: 1
         dilationSettings:

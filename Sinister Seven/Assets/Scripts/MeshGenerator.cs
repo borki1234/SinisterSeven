@@ -9,14 +9,18 @@ public class MeshGenerator : MonoBehaviour
     Mesh mesh;
     MeshCollider meshCollider;
 
-    Vector3[] vertices;
-    int[] triangles;
+    int chunkSize = 10;
+    int numChunksX;
+    int numChunksZ;
+    List<Vector3[]> chunkVertices;
+    List<int[]> chunkTriangles;
+    Dictionary<Vector2Int, GameObject> chunkObjects;
 
     public int xSize = 200;
     public int zSize = 200;
-    public float noiseScale = 0.05f; // Adjust the noise scale for finer details
-    public int octaves = 4; // Increase the number of octaves for more detail
-    public float persistence = 0.5f; // Adjust the persistence for more variation
+    public float noiseScale = 0.05f;
+    public int octaves = 4;
+    public float persistence = 0.5f;
 
     void Start()
     {
@@ -26,92 +30,120 @@ public class MeshGenerator : MonoBehaviour
         meshCollider = GetComponent<MeshCollider>();
         meshCollider.sharedMesh = mesh;
 
-        CreateShape();
-        UpdateMesh();
-    }
+        numChunksX = Mathf.CeilToInt((float)xSize / chunkSize);
+        numChunksZ = Mathf.CeilToInt((float)zSize / chunkSize);
 
-    void CreateShape()
-    {
-        vertices = new Vector3[(xSize + 1) * (zSize + 1)];
-        for (int i = 0, z = 0; z <= zSize; z++)
+        chunkVertices = new List<Vector3[]>();
+        chunkTriangles = new List<int[]>();
+        chunkObjects = new Dictionary<Vector2Int, GameObject>();
+
+        for (int cz = 0; cz < numChunksZ; cz++)
         {
-            for (int x = 0; x <= xSize; x++)
+            for (int cx = 0; cx < numChunksX; cx++)
             {
-                float y = 0f;
+                Vector2Int chunkKey = new Vector2Int(cx, cz);
+                GameObject chunkObject = new GameObject("Chunk_" + chunkKey);
+                chunkObject.transform.parent = transform;
+                chunkObjects.Add(chunkKey, chunkObject);
 
-                // Apply multiple octaves of Perlin noise for smoothing
-                float amplitude = 10f;
-                float frequency = 0.2f;
-                float maxNoiseHeight = 0f;
+                int chunkStartX = cx * chunkSize;
+                int chunkStartZ = cz * chunkSize;
+                int chunkEndX = Mathf.Min(chunkStartX + chunkSize, xSize + 1);
+                int chunkEndZ = Mathf.Min(chunkStartZ + chunkSize, zSize + 1);
+                int chunkWidth = chunkEndX - chunkStartX;
+                int chunkHeight = chunkEndZ - chunkStartZ;
 
-                for (int oct = 0; oct < octaves; oct++)
+                Vector3[] chunkVerts = new Vector3[(chunkWidth + 1) * (chunkHeight + 1)];
+                int[] chunkTris = new int[chunkWidth * chunkHeight * 6];
+
+                int vertIndex = 0;
+                int triIndex = 0;
+
+                for (int z = chunkStartZ; z <= chunkEndZ; z++)
                 {
-                    float perlinX = (x * noiseScale * frequency);
-                    float perlinZ = (z * noiseScale * frequency);
-                    float noiseHeight = Mathf.PerlinNoise(perlinX, perlinZ) * 2f - 1f;
-                    y += noiseHeight * amplitude;
+                    for (int x = chunkStartX; x <= chunkEndX; x++)
+                    {
+                        float y = CalculateHeight(x, z);
 
-                    maxNoiseHeight += amplitude;
-                    amplitude *= persistence;
-                    frequency *= 2f;
+                        chunkVerts[vertIndex] = new Vector3(x, y, z);
+
+                        if (x < chunkEndX && z < chunkEndZ)
+                        {
+                            chunkTris[triIndex + 0] = vertIndex;
+                            chunkTris[triIndex + 1] = vertIndex + chunkWidth + 1;
+                            chunkTris[triIndex + 2] = vertIndex + 1;
+                            chunkTris[triIndex + 3] = vertIndex + 1;
+                            chunkTris[triIndex + 4] = vertIndex + chunkWidth + 1;
+                            chunkTris[triIndex + 5] = vertIndex + chunkWidth + 2;
+
+                            triIndex += 6;
+                        }
+
+                        vertIndex++;
+                    }
                 }
 
-                y /= maxNoiseHeight;
-                y *= 10f; // Adjust the scale of the terrain
+                chunkVertices.Add(chunkVerts);
+                chunkTriangles.Add(chunkTris);
 
-                vertices[i] = new Vector3(x, y, z);
-                i++;
+                Mesh chunkMesh = new Mesh();
+                chunkMesh.vertices = chunkVerts;
+                chunkMesh.triangles = chunkTris;
+                chunkMesh.RecalculateNormals();
+
+                MeshFilter chunkMeshFilter = chunkObject.AddComponent<MeshFilter>();
+                MeshRenderer chunkMeshRenderer = chunkObject.AddComponent<MeshRenderer>();
+                chunkMeshFilter.mesh = chunkMesh;
+                chunkMeshRenderer.material = GetComponent<MeshRenderer>().material;
+
+                MeshCollider chunkMeshCollider = chunkObject.AddComponent<MeshCollider>();
+                chunkMeshCollider.sharedMesh = chunkMesh;
             }
-        }
-
-        triangles = new int[xSize * zSize * 6];
-
-        int vert = 0;
-        int tris = 0;
-        for (int z = 0; z < zSize; z++)
-        {
-            for (int x = 0; x < xSize; x++)
-            {
-                triangles[tris + 0] = vert + 0;
-                triangles[tris + 1] = vert + xSize + 1;
-                triangles[tris + 2] = vert + 1;
-                triangles[tris + 3] = vert + 1;
-                triangles[tris + 4] = vert + xSize + 1;
-                triangles[tris + 5] = vert + xSize + 2;
-
-                vert++;
-                tris += 6;
-            }
-            vert++;
         }
     }
 
-    void UpdateMesh()
+    float CalculateHeight(int x, int z)
     {
-        mesh.Clear();
+        float y = 0f;
 
-        mesh.vertices = vertices;
-        mesh.triangles = triangles;
+        float amplitude = 10f;
+        float frequency = 0.2f;
+        float maxNoiseHeight = 0f;
 
-        mesh.RecalculateNormals();
+        for (int oct = 0; oct < octaves; oct++)
+        {
+            float perlinX = (x * noiseScale * frequency);
+            float perlinZ = (z * noiseScale * frequency);
+            float noiseHeight = Mathf.PerlinNoise(perlinX, perlinZ) * 2f - 1f;
+            y += noiseHeight * amplitude;
 
-        // Update the collider mesh
-        meshCollider.sharedMesh = mesh;
+            maxNoiseHeight += amplitude;
+            amplitude *= persistence;
+            frequency *= 2f;
+        }
+
+        y /= maxNoiseHeight;
+        y *= 10f;
+
+        return y;
     }
 
     private void OnDrawGizmos()
     {
-        if (vertices == null)
+        if (chunkVertices == null)
             return;
 
-        for (int i = 0; i < vertices.Length; i++)
+        foreach (Vector3[] chunk in chunkVertices)
         {
-            Gizmos.DrawSphere(vertices[i], .1f);
+            for (int i = 0; i < chunk.Length; i++)
+            {
+                Gizmos.DrawSphere(chunk[i], .1f);
+            }
         }
     }
 
     void Update()
     {
-
+        // Add logic to determine which chunks are visible and activate/deactivate/render only those chunks
     }
 }
